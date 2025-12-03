@@ -9,7 +9,7 @@ It combines **ML inference, serverless backend, CI/CD, and cloud monitoring** to
 
 ## **Architecture**
 
-![Architecture Diagram](./telco-churn-architecture.drawio.png)  
+![Architecture Diagram](https://github.com/AlFrancis-Dagaang/churn-prediction-frontend/blob/main/telco-churn-architecture.drawio.png?raw=true)  
 *Replace `architecture.png` with your architecture image file.*
 
 - **Frontend:** Static website hosted on **S3 + CloudFront**  
