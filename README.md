@@ -10,7 +10,7 @@ It combines **ML inference, serverless backend, CI/CD, and cloud monitoring** to
 ## **Architecture**
 
 ![Architecture Diagram](https://github.com/AlFrancis-Dagaang/churn-prediction-frontend/blob/main/telco-churn-architecture.drawio.png?raw=true)  
-*Replace `architecture.png` with your architecture image file.*
+
 
 - **Frontend:** Static website hosted on **S3 + CloudFront**  
 - **Backend:** **AWS Lambda container** running ML inference  
@@ -48,7 +48,23 @@ The workflow automatically builds the Docker image and deploys it to AWS Lambda:
 # Key steps:
 - Checkout code
 - Configure AWS credentials
+
+
 - Login to ECR
 - Build, tag, and push Docker image
 - Update Lambda function with new image
 - Publish Lambda version
+
+Environment Variables:
+
+AWS_REGION
+
+ECR_REPOSITORY
+
+LAMBDA_FUNCTION_NAME
+
+Secrets:
+
+AWS_ACCESS_KEY_ID
+
+AWS_SECRET_ACCESS_KEY
