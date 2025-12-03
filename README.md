@@ -115,7 +115,3 @@ The Lambda container requires the following Python packages:
 
 ---
 
-## License
-
-This project is released under the MIT License.
-
