@@ -38,19 +38,84 @@ It combines **ML inference, serverless backend, CI/CD, and cloud monitoring** to
 
 ---
 
-## **Setup / Deployment**
+## Setup / Deployment
 
-### **1️⃣ GitHub Actions CI/CD**
+### 1. GitHub Actions CI/CD
 
 The workflow automatically builds the Docker image and deploys it to AWS Lambda:
 
-```yaml
-# Key steps:
-- Checkout code
-- Configure AWS credentials
+- Checkout code from GitHub repository
+- Configure AWS credentials (Access Key ID and Secret Access Key)
+- Login to Amazon ECR
+- Build, tag, and push Docker image to ECR
+- Update the Lambda function with the new image
+- Publish Lambda version for deployment
 
+---
 
-- Login to ECR
-- Build, tag, and push Docker image
-- Update Lambda function with new image
-- Publish Lambda version
+### 2. Docker
+
+- Base image: `public.ecr.aws/lambda/python:3.10`
+- Installs dependencies from `requirements.txt`
+- Copies application code and ML model files into container
+- Sets the Lambda handler to `app.lambda_handler`
+
+---
+
+### 3. Lambda Function (`app.py`)
+
+- Loads pre-trained Balanced Random Forest model and threshold
+- Optionally loads feature scaler for input data
+- Converts incoming JSON request to a pandas DataFrame
+- Aligns features to match model input and applies scaling if needed
+- Calculates churn probability and determines prediction label (`CHURN` / `NOT CHURN`)
+- Stores prediction, input data, timestamp, and unique ID in DynamoDB
+- Returns JSON response with prediction details via API Gateway
+
+---
+
+### 4. Python Dependencies (`requirements.txt`)
+
+The Lambda container requires the following Python packages:
+
+- pandas
+- numpy
+- scikit-learn==1.7.1
+- joblib
+- boto3
+- imbalanced-learn
+
+---
+
+## API Usage
+
+- **Endpoint:** Configured through API Gateway → Lambda
+- **Method:** POST
+- **Request Body:** JSON containing customer attributes (e.g., gender, tenure, services)
+- **Response:** JSON containing:
+
+  - `predictionId`: Unique ID for the prediction
+  - `churn_probability`: Probability value of churn
+  - `prediction`: "CHURN" or "NOT CHURN"
+  - `timestamp`: Unix timestamp of prediction
+
+---
+
+## Frontend Deployment
+
+- Static files are deployed to S3 via GitHub Actions
+- Served globally through CloudFront CDN
+
+---
+
+## Monitoring
+
+- Lambda and API Gateway logs are sent to CloudWatch
+- Monitor function executions, errors, and performance metrics
+
+---
+
+## License
+
+This project is released under the MIT License.
+
