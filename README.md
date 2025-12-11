@@ -12,7 +12,13 @@ It combines **ML inference, serverless backend, CI/CD, and cloud monitoring** to
 ![Architecture Diagram](https://github.com/AlFrancis-Dagaang/churn-prediction-frontend/blob/main/telco-churn-architecture.drawio.png?raw=true)  
 
 
-- **Frontend:** Static website hosted on **S3 + CloudFront**  
+- **Frontend:** Static website hosted on **S3 + CloudFront**
+
+![Website Interface](https://github.com/AlFrancis-Dagaang/churn-prediction-frontend/blob/main/telco-churn-architecture.drawio.png?raw=true)
+
+
+
+  
 - **Backend:** **AWS Lambda container** running ML inference  
 - **Database:** **DynamoDB** for storing predictions  
 - **CI/CD:** GitHub Actions → Docker → ECR → Lambda  
