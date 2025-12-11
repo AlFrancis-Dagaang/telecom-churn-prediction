@@ -14,7 +14,7 @@ It combines **ML inference, serverless backend, CI/CD, and cloud monitoring** to
 
 - **Frontend:** Static website hosted on **S3 + CloudFront**
 
-![Website Interface](https://github.com/AlFrancis-Dagaang/churn-prediction-frontend/blob/main/telco-churn-architecture.drawio.png?raw=true)
+![Website Interface](https://github.com/AlFrancis-Dagaang/telecom-churn-prediction/blob/main/website-interface.png)
 
 
 
