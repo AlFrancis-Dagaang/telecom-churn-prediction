@@ -4,12 +4,22 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
   workflow_dispatch:
 
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: churn-lambda-repo
   LAMBDA_FUNCTION_NAME: churn-prediction-lambda
+
+# Prevent concurrent deployments
+concurrency:
+  group: lambda-deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -41,18 +51,75 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Update Lambda function
+      - name: Wait for Lambda to be ready
+        run: |
+          echo "Checking if Lambda function is ready..."
+          max_attempts=10
+          attempt=1
+          
+          while [ $attempt -le $max_attempts ]; do
+            status=$(aws lambda get-function --function-name ${{ env.LAMBDA_FUNCTION_NAME }} --query 'Configuration.State' --output text)
+            last_update_status=$(aws lambda get-function --function-name ${{ env.LAMBDA_FUNCTION_NAME }} --query 'Configuration.LastUpdateStatus' --output text)
+            
+            echo "Attempt $attempt: State=$status, LastUpdateStatus=$last_update_status"
+            
+            if [ "$status" = "Active" ] && [ "$last_update_status" = "Successful" ]; then
+              echo "Lambda function is ready!"
+              break
+            fi
+            
+            if [ $attempt -eq $max_attempts ]; then
+              echo "Lambda function not ready after $max_attempts attempts"
+              exit 1
+            fi
+            
+            echo "Waiting 10 seconds..."
+            sleep 10
+            attempt=$((attempt + 1))
+          done
+
+      - name: Update Lambda function with retry
         env:
           IMAGE_URI: ${{ steps.build-image.outputs.image }}
         run: |
-          aws lambda update-function-code \
-            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --image-uri $IMAGE_URI
+          max_attempts=5
+          attempt=1
+          wait_time=15
           
-          aws lambda wait function-updated \
-            --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
-          
-          echo "Lambda function updated successfully!"
+          while [ $attempt -le $max_attempts ]; do
+            echo "Update attempt $attempt of $max_attempts"
+            
+            if aws lambda update-function-code \
+              --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+              --image-uri $IMAGE_URI 2>&1 | tee /tmp/lambda-update.log; then
+              
+              echo "Lambda update command successful, waiting for function to be updated..."
+              aws lambda wait function-updated \
+                --function-name ${{ env.LAMBDA_FUNCTION_NAME }}
+              
+              echo "Lambda function updated successfully!"
+              exit 0
+            fi
+            
+            # Check if it's a ResourceConflictException
+            if grep -q "ResourceConflictException" /tmp/lambda-update.log; then
+              if [ $attempt -lt $max_attempts ]; then
+                echo "ResourceConflictException detected. Waiting ${wait_time}s before retry..."
+                sleep $wait_time
+                wait_time=$((wait_time + 10))
+              else
+                echo "Failed after $max_attempts attempts due to ResourceConflictException"
+                exit 1
+              fi
+            else
+              # Different error, fail immediately
+              echo "Update failed with non-conflict error"
+              cat /tmp/lambda-update.log
+              exit 1
+            fi
+            
+            attempt=$((attempt + 1))
+          done
 
       - name: Publish Lambda version
         run: |
